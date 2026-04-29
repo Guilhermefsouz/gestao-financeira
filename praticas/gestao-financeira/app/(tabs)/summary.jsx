@@ -1,77 +1,82 @@
 import { useContext, useMemo } from "react";
+import {
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { MoneyContext } from "../../contexts/GlobalState";
-import { categories } from "../../constants/categories";
-import { globalStyles } from "../../styles/globalStyles";
 import SummaryItem from "../../components/SummaryItem";
-import { StyleSheet, Text, View } from "react-native";
+import { globalStyles } from "../../styles/globalStyles";
 import { colors } from "../../constants/colors";
 
+/**
+ * Tela "Resumo".
+ *
+ * Itera sobre as categorias vindas do servidor (não há mais lista hardcoded)
+ * e calcula:
+ *  - totais por categoria (somatório dos `value` das transações da categoria);
+ *  - saldo final = soma das transações de categorias `isIncome` menos as demais.
+ *
+ * @returns {JSX.Element}
+ */
 export default function Summary() {
-  const [transactions] = useContext(MoneyContext);
+  const { transactions, categories, loading } = useContext(MoneyContext);
 
-  const getTotals = () => {
-    const totals = {
-      sum: 0,
-      income: 0,
-      food: 0,
-      education: 0,
-      house: 0,
-      travel: 0,
-    };
+  const { totalsById, balance } = useMemo(() => {
+    const acc = {};
+    let saldo = 0;
 
-    for (let i = 0; i < transactions.length; i++) {
-      const item = transactions[i];
+    for (const c of categories) acc[c.id] = 0;
 
-      totals[item.category] += item.value;
-
-      if (item.category === categories.income.name) {
-        totals.sum += item.value;
+    for (const t of transactions) {
+      const numericValue = Number(t.value);
+      if (acc[t.categoryId] !== undefined) {
+        acc[t.categoryId] += numericValue;
+      }
+      const cat = t.category ?? categories.find((c) => c.id === t.categoryId);
+      if (cat?.isIncome) {
+        saldo += numericValue;
       } else {
-        totals.sum -= item.value;
+        saldo -= numericValue;
       }
     }
-    return totals;
-  };
+    return { totalsById: acc, balance: saldo };
+  }, [transactions, categories]);
 
-  const totals = useMemo(getTotals, [transactions]);
+  if (loading && categories.length === 0) {
+    return (
+      <View style={[globalStyles.screenContainer, styles.center]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
 
-  const valueStyle =
-    totals.sum > 0 ? globalStyles.positiveText : globalStyles.negativeText;
+  const balanceStyle =
+    balance >= 0 ? globalStyles.positiveText : globalStyles.negativeText;
 
   return (
     <View style={globalStyles.screenContainer}>
-      <View style={globalStyles.content}>
-        <SummaryItem
-          category={categories.income.name}
-          value={totals[categories.income.name]}
-        />
-        <SummaryItem
-          category={categories.food.name}
-          value={totals[categories.food.name]}
-        />
-        <SummaryItem
-          category={categories.house.name}
-          value={totals[categories.house.name]}
-        />
-        <SummaryItem
-          category={categories.education.name}
-          value={totals[categories.education.name]}
-        />
-        <SummaryItem
-          category={categories.travel.name}
-          value={totals[categories.travel.name]}
-        />
+      <ScrollView style={globalStyles.content}>
+        {categories.map((category) => (
+          <SummaryItem
+            key={category.id}
+            category={category}
+            value={totalsById[category.id] ?? 0}
+          />
+        ))}
         <View style={globalStyles.line} />
         <View style={styles.balance}>
           <Text style={styles.balanceText}>Saldo</Text>
-          <Text style={valueStyle}>
-            {totals.sum.toLocaleString("pt-BR", {
+          <Text style={balanceStyle}>
+            {balance.toLocaleString("pt-BR", {
               style: "currency",
               currency: "BRL",
             })}
           </Text>
         </View>
-      </View>
+      </ScrollView>
     </View>
   );
 }
@@ -85,6 +90,11 @@ const styles = StyleSheet.create({
   balanceText: {
     fontSize: 18,
     color: colors.primaryText,
-    fontWeight: 800,
+    fontWeight: "800",
+  },
+  center: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

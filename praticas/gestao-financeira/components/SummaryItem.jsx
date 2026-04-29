@@ -1,22 +1,23 @@
 import { StyleSheet, Text, View } from "react-native";
-
 import CategoryItem from "./CategoryItem";
-import { categories } from "../constants/categories";
 import { globalStyles } from "../styles/globalStyles";
 
+/**
+ * Linha do resumo: bolinha da categoria + nome + total formatado em BRL.
+ *
+ * @param {{ category: object, value: number }} props
+ * @returns {JSX.Element}
+ */
 export default function SummaryItem({ category, value }) {
-  const valueStyle =
-    category === categories.income.name
-      ? globalStyles.positiveText
-      : globalStyles.negativeText;
+  const valueStyle = category?.isIncome
+    ? globalStyles.positiveText
+    : globalStyles.negativeText;
 
   return (
     <View style={styles.itemContainer}>
       <CategoryItem category={category} />
       <View style={styles.textContainer}>
-        <Text style={globalStyles.primaryText}>
-          {categories[category].displayName}
-        </Text>
+        <Text style={globalStyles.primaryText}>{category.displayName}</Text>
         <Text style={valueStyle}>
           {value.toLocaleString("pt-BR", {
             style: "currency",

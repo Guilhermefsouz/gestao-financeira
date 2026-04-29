@@ -11,5 +11,5 @@ export const colors = {
   primaryText: "#666666",
   secondaryText: "#B1B1B1",
   positiveText: "#37BF81",
-  negativesText: "#DA5567"
+  negativeText: "#DA5567"
 }

@@ -1,10 +1,19 @@
-import { StyleSheet, Text } from "react-native";
-import { TouchableHighlight } from "react-native";
+import { StyleSheet, Text, TouchableHighlight } from "react-native";
 import { colors } from "../constants/colors";
 
-export default function Button({ children, onPress }) {
+/**
+ * Botão primário do app.
+ *
+ * @param {{ children: React.ReactNode, onPress: () => void, disabled?: boolean }} props
+ * @returns {JSX.Element}
+ */
+export default function Button({ children, onPress, disabled = false }) {
   return (
-    <TouchableHighlight style={style.background} onPress={onPress}>
+    <TouchableHighlight
+      style={[style.background, disabled && style.disabled]}
+      onPress={disabled ? undefined : onPress}
+      underlayColor={colors.primary}
+    >
       <Text style={style.text}>{children}</Text>
     </TouchableHighlight>
   );
@@ -19,9 +28,12 @@ const style = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: colors.primary,
   },
+  disabled: {
+    opacity: 0.6,
+  },
   text: {
     color: colors.primaryContrast,
     fontSize: 18,
-    fontWeight: 600,
+    fontWeight: "600",
   },
 });

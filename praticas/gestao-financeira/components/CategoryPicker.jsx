@@ -1,39 +1,36 @@
-import { Picker } from "@react-native-picker/picker"
-import { StyleSheet, Text, View } from "react-native"
-import { globalStyles } from "../styles/globalStyles"
-import { colors } from "../constants/colors"
-import { categories } from "../constants/categories"
+import { Picker } from "@react-native-picker/picker";
+import { StyleSheet, Text, View } from "react-native";
+import { globalStyles } from "../styles/globalStyles";
+import { colors } from "../constants/colors";
 
-export default function CategoryPicker({ form, setForm }) {
+/**
+ * Picker de categoria que itera dinamicamente sobre a lista vinda do back-end.
+ *
+ * @param {{
+ *   form: { categoryId: string },
+ *   setForm: (next: object) => void,
+ *   categories: Array<{ id: string, displayName: string }>
+ * }} props
+ * @returns {JSX.Element}
+ */
+export default function CategoryPicker({ form, setForm, categories }) {
   return (
     <View>
       <Text style={globalStyles.inputLabel}>Categoria</Text>
       <View style={styles.picker}>
         <Picker
-          selectedValue={form.category}
-          onValueChange={(itemValue) => setForm({ ...form, category: itemValue })}
+          selectedValue={form.categoryId}
+          onValueChange={(itemValue) =>
+            setForm({ ...form, categoryId: itemValue })
+          }
         >
-          <Picker.Item
-            label={categories.income.displayName}
-            value={categories.income.name}
-          />
-          <Picker.Item label={categories.food.displayName} value={categories.food.name} />
-          <Picker.Item
-            label={categories.house.displayName}
-            value={categories.house.name}
-          />
-          <Picker.Item
-            label={categories.education.displayName}
-            value={categories.education.name}
-          />
-          <Picker.Item
-            label={categories.travel.displayName}
-            value={categories.travel.name}
-          />
+          {categories.map((c) => (
+            <Picker.Item key={c.id} label={c.displayName} value={c.id} />
+          ))}
         </Picker>
       </View>
     </View>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
@@ -44,6 +41,6 @@ const styles = StyleSheet.create({
     borderColor: colors.secondaryText,
     borderWidth: 1,
     borderRadius: 8,
-    flexGrow: 1
-  }
-})
+    flexGrow: 1,
+  },
+});

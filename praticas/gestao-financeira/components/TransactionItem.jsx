@@ -1,18 +1,21 @@
 import { StyleSheet, Text, View } from "react-native";
 import { globalStyles } from "../styles/globalStyles";
 import CategoryItem from "./CategoryItem";
-import { categories } from "../constants/categories";
 
-export default function TransactionItem({
-  category,
-  date,
-  description,
-  value,
-}) {
-  const valueStyle =
-    category === categories.income.name
-      ? globalStyles.positiveText
-      : globalStyles.negativeText;
+/**
+ * Item de uma transação na lista (tela "Transações").
+ *
+ * Recebe a transação inteira (já com a categoria expandida pelo back-end)
+ * e formata data/valor em português brasileiro.
+ *
+ * @param {{ category: object, date: string|Date, description: string, value: string|number }} props
+ * @returns {JSX.Element}
+ */
+export default function TransactionItem({ category, date, description, value }) {
+  const numericValue = Number(value);
+  const valueStyle = category?.isIncome
+    ? globalStyles.positiveText
+    : globalStyles.negativeText;
 
   return (
     <>
@@ -25,7 +28,7 @@ export default function TransactionItem({
           <View style={styles.bottomLineContainer}>
             <Text style={globalStyles.primaryText}>{description}</Text>
             <Text style={valueStyle}>
-              {value.toLocaleString("pt-BR", {
+              {numericValue.toLocaleString("pt-BR", {
                 style: "currency",
                 currency: "BRL",
               })}
