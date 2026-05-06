@@ -93,9 +93,13 @@ Antes de tudo, **crie o banco vazio** no MySQL. Abra o **MySQL Workbench**, cone
 ```sql
 CREATE DATABASE gestao_financeira CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ```
+Agora, dentro de `gestao-financeira-api/`, 
+Instalar dependências do primas (VERSÕES FIXAS):
+```bash
+npm install prisma@5.22.0 @prisma/client@5.22.0
+```
 
-Agora, dentro de `gestao-financeira-api/`, inicialize o Prisma:
-
+inicialize o Prisma:
 ```bash
 npx prisma init --datasource-provider mysql
 ```
@@ -103,8 +107,14 @@ npx prisma init --datasource-provider mysql
 Isso cria `prisma/schema.prisma` e um `.env` na raiz. Edite o `.env`:
 
 ```env
-DATABASE_URL="mysql://root:Senha10adaps@localhost:3306/gestao_financeira"
+DATABASE_URL="mysql://root:iesb@localhost:3306/gestao_financeira"
 PORT=3000
+```
+
+Gerar Prisma Client:
+
+```bash
+npx prisma generate
 ```
 
 > **Senhas com caracteres especiais:** se sua senha tivesse `@`, `#`, etc., seria preciso URL-encodar.
