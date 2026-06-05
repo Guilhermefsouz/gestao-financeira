@@ -8,8 +8,11 @@ export default function DescriptionInput({ form, setForm, valueInputRef }) {
       <TextInput
         value={form.description}
         returnKeyType="next"
+        autoFocus={true}
+        autoCorrect={false}
+        autoCapitalize="sentences"
         onChangeText={(text) => setForm({ ...form, description: text })}
-        onSubmitEditing={() => valueInputRef.current.focus()}
+        onSubmitEditing={() => valueInputRef.current?.focus()}
         style={globalStyles.input}
       />
     </View>

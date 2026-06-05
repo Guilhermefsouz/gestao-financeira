@@ -10,6 +10,7 @@ import {
   View,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
+import { Picker } from "@react-native-picker/picker";
 import { MoneyContext } from "../../contexts/GlobalState";
 import Button from "../../components/Button";
 import CategoryItem from "../../components/CategoryItem";
@@ -17,62 +18,55 @@ import { globalStyles } from "../../styles/globalStyles";
 import { colors } from "../../constants/colors";
 
 const PRESET_COLORS = [
-  "#DE9AC3",
-  "#DEA17B",
-  "#E6E088",
-  "#AB8FBE",
-  "#82C9DE",
-  "#FFB6B6",
-  "#9ED9A9",
-  "#F5C26B",
+  "#DE9AC3","#DEA17B","#E6E088","#AB8FBE",
+  "#82C9DE","#FFB6B6","#9ED9A9","#F5C26B",
 ];
 
-/**
- * Tela "Categorias".
- *
- * Permite listar, criar e excluir categorias. Categorias com `isDefault=true`
- * vêm do seed do back-end e não podem ser removidas — o servidor barra a
- * exclusão e a tela apenas oculta o botão de remover para essas linhas.
- *
- * @returns {JSX.Element}
- */
-export default function CategoriesScreen() {
-  const { categories, loading, addCategory, removeCategory } =
-    useContext(MoneyContext);
+const ICON_OPTIONS = [
+  { label: "Etiqueta",   value: "label" },
+  { label: "Coração",    value: "favorite" },
+  { label: "Comida",     value: "fastfood" },
+  { label: "Casa",       value: "home" },
+  { label: "Livro",      value: "book" },
+  { label: "Viagem",     value: "airplanemode-active" },
+  { label: "Carro",      value: "directions-car" },
+  { label: "Hospital",   value: "local-hospital" },
+  { label: "Academia",   value: "fitness-center" },
+  { label: "Compras",    value: "shopping-cart" },
+  { label: "Animal",     value: "pets" },
+  { label: "Música",     value: "music-note" },
+  { label: "Futebol",    value: "sports-soccer" },
+  { label: "Trabalho",   value: "work" },
+  { label: "Escola",     value: "school" },
+  { label: "Café",       value: "local-cafe" },
+];
 
-  const [name, setName] = useState("");
+export default function CategoriesScreen() {
+  const { categories, loading, addCategory, removeCategory } = useContext(MoneyContext);
+
+  const [name, setName]               = useState("");
   const [displayName, setDisplayName] = useState("");
-  const [icon, setIcon] = useState("label");
-  const [background, setBackground] = useState(PRESET_COLORS[0]);
-  const [submitting, setSubmitting] = useState(false);
+  const [icon, setIcon]               = useState("label");
+  const [background, setBackground]   = useState(PRESET_COLORS[0]);
+  const [submitting, setSubmitting]   = useState(false);
 
   const resetForm = () => {
-    setName("");
-    setDisplayName("");
-    setIcon("label");
-    setBackground(PRESET_COLORS[0]);
+    setName(""); setDisplayName(""); setIcon("label"); setBackground(PRESET_COLORS[0]);
   };
 
   const handleCreate = async () => {
     if (!name.trim() || name.trim().length < 2) {
-      Alert.alert("Informe um identificador (mín. 2 letras, sem espaços).");
-      return;
+      Alert.alert("Informe um identificador (mín. 2 letras, sem espaços)."); return;
     }
     if (!displayName.trim() || displayName.trim().length < 2) {
-      Alert.alert("Informe o nome de exibição (mín. 2 letras).");
-      return;
+      Alert.alert("Informe o nome de exibição (mín. 2 letras)."); return;
     }
-    if (!icon.trim()) {
-      Alert.alert("Informe o nome do ícone (Material Icons).");
-      return;
-    }
-
     setSubmitting(true);
     try {
       await addCategory({
         name: name.trim().toLowerCase().replace(/\s+/g, "_"),
         displayName: displayName.trim(),
-        icon: icon.trim(),
+        icon,
         background,
         isIncome: false,
       });
@@ -92,14 +86,10 @@ export default function CategoriesScreen() {
       [
         { text: "Cancelar", style: "cancel" },
         {
-          text: "Excluir",
-          style: "destructive",
+          text: "Excluir", style: "destructive",
           onPress: async () => {
-            try {
-              await removeCategory(item.id);
-            } catch (e) {
-              Alert.alert("Erro ao excluir", e.message ?? "Tente novamente.");
-            }
+            try { await removeCategory(item.id); }
+            catch (e) { Alert.alert("Erro ao excluir", e.message ?? "Tente novamente."); }
           },
         },
       ],
@@ -127,49 +117,37 @@ export default function CategoriesScreen() {
 
             <View>
               <Text style={globalStyles.inputLabel}>Identificador</Text>
-              <TextInput
-                value={name}
-                onChangeText={setName}
-                placeholder="ex.: health"
-                autoCapitalize="none"
-                style={globalStyles.input}
-              />
+              <TextInput value={name} onChangeText={setName} placeholder="ex.: health"
+                autoCapitalize="none" style={globalStyles.input} />
             </View>
 
             <View>
               <Text style={globalStyles.inputLabel}>Nome de exibição</Text>
-              <TextInput
-                value={displayName}
-                onChangeText={setDisplayName}
-                placeholder="ex.: Saúde"
-                style={globalStyles.input}
-              />
+              <TextInput value={displayName} onChangeText={setDisplayName}
+                placeholder="ex.: Saúde" style={globalStyles.input} />
             </View>
 
             <View>
-              <Text style={globalStyles.inputLabel}>Ícone (Material)</Text>
-              <TextInput
-                value={icon}
-                onChangeText={setIcon}
-                placeholder="ex.: favorite, fastfood, work"
-                autoCapitalize="none"
-                style={globalStyles.input}
-              />
+              <Text style={globalStyles.inputLabel}>Ícone</Text>
+              <View style={styles.picker}>
+                <Picker
+                  selectedValue={icon}
+                  onValueChange={(value) => setIcon(value)}
+                >
+                  {ICON_OPTIONS.map((opt) => (
+                    <Picker.Item key={opt.value} label={opt.label} value={opt.value} />
+                  ))}
+                </Picker>
+              </View>
             </View>
 
             <View>
               <Text style={globalStyles.inputLabel}>Cor</Text>
               <View style={styles.colorRow}>
                 {PRESET_COLORS.map((c) => (
-                  <TouchableOpacity
-                    key={c}
-                    onPress={() => setBackground(c)}
-                    style={[
-                      styles.colorDot,
-                      { backgroundColor: c },
-                      background === c && styles.colorDotSelected,
-                    ]}
-                  />
+                  <TouchableOpacity key={c} onPress={() => setBackground(c)}
+                    style={[styles.colorDot, { backgroundColor: c },
+                      background === c && styles.colorDotSelected]} />
                 ))}
               </View>
             </View>
@@ -193,15 +171,8 @@ export default function CategoriesScreen() {
               </Text>
             </View>
             {!item.isDefault && (
-              <TouchableOpacity
-                onPress={() => handleDelete(item)}
-                hitSlop={8}
-              >
-                <MaterialIcons
-                  name="delete-outline"
-                  size={24}
-                  color={colors.negativeText}
-                />
+              <TouchableOpacity onPress={() => handleDelete(item)} hitSlop={8}>
+                <MaterialIcons name="delete-outline" size={24} color={colors.negativeText} />
               </TouchableOpacity>
             )}
           </View>
@@ -212,48 +183,20 @@ export default function CategoriesScreen() {
 }
 
 const styles = StyleSheet.create({
-  listContent: {
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    gap: 12,
-  },
-  formContainer: {
-    gap: 12,
-    marginBottom: 8,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: colors.primaryText,
-    marginTop: 4,
-  },
-  categoryRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    paddingVertical: 6,
-  },
-  categoryInfo: {
-    flex: 1,
-  },
-  colorRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  colorDot: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    borderWidth: 2,
-    borderColor: "transparent",
-  },
-  colorDotSelected: {
-    borderColor: colors.primaryText,
-  },
-  center: {
-    flex: 1,
-    alignItems: "center",
+  listContent:      { paddingVertical: 12, paddingHorizontal: 20, gap: 12 },
+  formContainer:    { gap: 12, marginBottom: 8 },
+  sectionTitle:     { fontSize: 16, fontWeight: "700", color: colors.primaryText, marginTop: 4 },
+  categoryRow:      { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 6 },
+  categoryInfo:     { flex: 1 },
+  colorRow:         { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  colorDot:         { width: 32, height: 32, borderRadius: 16, borderWidth: 2, borderColor: "transparent" },
+  colorDotSelected: { borderColor: colors.primaryText },
+  center:           { flex: 1, alignItems: "center", justifyContent: "center" },
+  picker: {
+    height: 44,
+    borderColor: colors.secondaryText,
+    borderWidth: 1,
+    borderRadius: 8,
     justifyContent: "center",
   },
 });

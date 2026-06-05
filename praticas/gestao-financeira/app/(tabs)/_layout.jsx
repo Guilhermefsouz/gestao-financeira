@@ -13,14 +13,8 @@ export default function TabsLayout() {
         headerTitleAlign: "center",
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.inactive,
-        tabBarStyle: {
-          height: 60,
-          paddingTop: 5,
-          backgroundColor: colors.background,
-        },
-        tabBarButton: (props) => (
-          <TouchableOpacity {...props} activeOpacity={0.8} />
-        ),
+        tabBarStyle: { height: 60, paddingTop: 5, backgroundColor: colors.background },
+        tabBarButton: (props) => <TouchableOpacity {...props} activeOpacity={0.8} />,
       }}
     >
       <Tabs.Screen
@@ -48,11 +42,7 @@ export default function TabsLayout() {
           tabBarLabel: "",
           tabBarIcon: () => (
             <View style={styles.addButton}>
-              <MaterialIcons
-                name="add"
-                size={40}
-                color={colors.primaryContrast}
-              />
+              <MaterialIcons name="add" size={40} color={colors.primaryContrast} />
             </View>
           ),
         }}
@@ -72,7 +62,6 @@ export default function TabsLayout() {
 
 const styles = StyleSheet.create({
   addButton: {
-    display: "flex",
     alignItems: "center",
     justifyContent: "center",
     height: 64,

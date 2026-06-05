@@ -1,40 +1,68 @@
 import { createContext, useCallback, useEffect, useState } from "react";
-import { api } from "../services/api";
+import { api, setAuthToken, clearAuthToken } from "../services/api";
 
 export const MoneyContext = createContext();
 
-/**
- * Provider global do app.
- *
- * Centraliza:
- *  - hidratação inicial das categorias e transações a partir da API REST;
- *  - estado de carregamento e erro de rede;
- *  - ações para criar/excluir transações e categorias mantendo o estado em sync.
- *
- * O estado **não** é mais persistido em AsyncStorage. A fonte de verdade é o
- * banco MySQL exposto pela API (`gestao-financeira-api/`).
- *
- * @param {{ children: React.ReactNode }} props
- * @returns {JSX.Element} Provider com o objeto de contexto exposto via `MoneyContext`.
- */
-export default function GlobalState({ children }) {
-  const [transactions, setTransactions] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+function storageGet(key) {
+  try { return localStorage.getItem(key); } catch { return null; }
+}
+function storageSet(key, value) {
+  try { localStorage.setItem(key, value); } catch {}
+}
+function storageRemove(key) {
+  try { localStorage.removeItem(key); } catch {}
+}
 
-  /**
-   * Recarrega categorias e transações do servidor em paralelo.
-   *
-   * @returns {Promise<void>} Resolve quando ambos os GETs terminarem.
-   */
+
+const savedToken = storageGet("token");
+const savedUser  = (() => {
+  try { return JSON.parse(storageGet("user") || "null"); } catch { return null; }
+})();
+if (savedToken) setAuthToken(savedToken);
+
+export default function GlobalState({ children }) {
+  const [user, setUser]                 = useState(savedUser);
+  const [transactions, setTransactions] = useState([]);
+  const [categories, setCategories]     = useState([]);
+  const [loading, setLoading]           = useState(false);
+  const [error, setError]               = useState(null);
+
+  const now = new Date();
+  const [filter, setFilter] = useState({
+    month: now.getMonth() + 1,
+    year:  now.getFullYear(),
+  });
+
+  const login = useCallback(async ({ email, password }) => {
+    const result = await api.login({ email, password });
+    setAuthToken(result.token);
+    storageSet("token", result.token);
+    storageSet("user", JSON.stringify(result.user));
+    setUser(result.user);
+    return result;
+  }, []);
+
+  const logout = useCallback(() => {
+    clearAuthToken();
+    storageRemove("token");
+    storageRemove("user");
+    setUser(null);
+    setTransactions([]);
+    setCategories([]);
+  }, []);
+
+  const register = useCallback(async (data) => {
+    return api.register(data);
+  }, []);
+
   const refresh = useCallback(async () => {
+    if (!user) return;
     setLoading(true);
     setError(null);
     try {
       const [cats, txs] = await Promise.all([
         api.listCategories(),
-        api.listTransactions(),
+        api.listTransactions(filter),
       ]);
       setCategories(cats);
       setTransactions(txs);
@@ -43,56 +71,41 @@ export default function GlobalState({ children }) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user, filter]);
 
   useEffect(() => {
     refresh();
   }, [refresh]);
 
-  /**
-   * Cria uma nova transação no servidor e adiciona-a ao estado local.
-   *
-   * @param {{description: string, value: number, date: Date|string, categoryId: string}} data
-   * @returns {Promise<object>} Transação criada (já com a categoria expandida).
-   */
   const addTransaction = useCallback(async (data) => {
     const created = await api.createTransaction(data);
     setTransactions((prev) => [created, ...prev]);
     return created;
   }, []);
 
-  /**
-   * Exclui uma transação no servidor e remove-a do estado local.
-   *
-   * @param {string} id - id (cuid) da transação.
-   * @returns {Promise<void>}
-   */
+  const updateTransaction = useCallback(async (id, data) => {
+    const updated = await api.updateTransaction(id, data);
+    setTransactions((prev) =>
+      prev.map((t) => (t.id === id ? updated : t))
+    );
+    return updated;
+  }, []);
+
   const removeTransaction = useCallback(async (id) => {
     await api.deleteTransaction(id);
     setTransactions((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
-  /**
-   * Cria uma nova categoria no servidor e adiciona-a ao estado local.
-   *
-   * @param {{name: string, displayName: string, icon: string, background: string, isIncome?: boolean}} data
-   * @returns {Promise<object>} Categoria criada.
-   */
   const addCategory = useCallback(async (data) => {
     const created = await api.createCategory(data);
     setCategories((prev) =>
-      [...prev, created].sort((a, b) => a.displayName.localeCompare(b.displayName))
+      [...prev, created].sort((a, b) =>
+        a.displayName.localeCompare(b.displayName)
+      )
     );
     return created;
   }, []);
 
-  /**
-   * Exclui uma categoria no servidor e remove-a do estado local.
-   * Categorias padrão (`isDefault`) são bloqueadas pelo back-end.
-   *
-   * @param {string} id - id (cuid) da categoria.
-   * @returns {Promise<void>}
-   */
   const removeCategory = useCallback(async (id) => {
     await api.deleteCategory(id);
     setCategories((prev) => prev.filter((c) => c.id !== id));
@@ -101,15 +114,11 @@ export default function GlobalState({ children }) {
   return (
     <MoneyContext.Provider
       value={{
-        transactions,
-        categories,
-        loading,
-        error,
-        refresh,
-        addTransaction,
-        removeTransaction,
-        addCategory,
-        removeCategory,
+        user, login, logout, register,
+        transactions, categories, loading, error, refresh,
+        filter, setFilter,
+        addTransaction, updateTransaction, removeTransaction,
+        addCategory, removeCategory,
       }}
     >
       {children}

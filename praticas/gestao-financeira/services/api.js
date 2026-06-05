@@ -1,28 +1,38 @@
 /**
  * URL base da API.
- *
- * - No emulador Android, "localhost" do app aponta para o próprio emulador,
- *   por isso usamos 10.0.2.2 (IP especial que o Android mapeia para o
- *   localhost da máquina hospedeira).
- * - Em device físico, troque para o IP da sua máquina na rede local
- *   (ex.: http://192.168.0.10:3000) — descubra com `ipconfig` no Windows.
- * - Para iOS Simulator, "http://localhost:3000" funciona normalmente.
- *
- * Você pode sobrescrever via variável de ambiente do Expo (EXPO_PUBLIC_API_URL).
+ * - Emulador Android: 10.0.2.2 mapeia para localhost da máquina hospedeira.
+ * - Device físico:    troque para o IP da sua máquina (ex.: http://192.168.0.10:3000).
+ * - iOS Simulator:   http://localhost:3000 funciona normalmente.
  */
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://10.0.2.2:3000";
 
+/** Token JWT armazenado em memória após o login. */
+let _token = null;
+
+/** Define o token após um login bem-sucedido. */
+export function setAuthToken(token) {
+  _token = token;
+}
+
+/** Remove o token (logout). */
+export function clearAuthToken() {
+  _token = null;
+}
+
 /**
- * Função utilitária que executa uma requisição HTTP e padroniza o tratamento de erros.
+ * Executa uma requisição HTTP e padroniza o tratamento de erros.
  *
  * @param {string} path - Caminho da rota (ex.: "/categories").
- * @param {RequestInit} [options] - Opções do fetch (method, headers, body, etc.).
- * @returns {Promise<any|null>} Corpo da resposta em JSON, ou null em respostas 204.
- * @throws {Error} Quando a resposta tem status HTTP fora da faixa 2xx.
+ * @param {RequestInit} [options] - Opções do fetch.
+ * @returns {Promise<any|null>} Corpo JSON ou null (204).
+ * @throws {Error} Quando status HTTP fora da faixa 2xx.
  */
 async function request(path, options = {}) {
+  const headers = { "Content-Type": "application/json" };
+  if (_token) headers["Authorization"] = `Bearer ${_token}`;
+
   const response = await fetch(`${BASE_URL}${path}`, {
-    headers: { "Content-Type": "application/json" },
+    headers,
     ...options,
   });
 
@@ -35,65 +45,36 @@ async function request(path, options = {}) {
 }
 
 export const api = {
-  /**
-   * Lista todas as categorias cadastradas.
-   * @returns {Promise<Array>} Lista de categorias ordenadas por displayName.
-   */
-  listCategories: () => request("/categories"),
+  // ── Auth ────────────────────────────────────────────────────────────────────
+  /** Registra novo usuário. */
+  register: (data) =>
+    request("/auth/register", { method: "POST", body: JSON.stringify(data) }),
 
   /**
-   * Cria uma nova categoria.
-   * @param {{name: string, displayName: string, icon: string, background: string, isIncome?: boolean}} data
-   * @returns {Promise<object>} Categoria criada.
+   * Autentica usuário.
+   * @returns {{ token: string, user: { id, name, email } }}
    */
-  createCategory: (data) =>
-    request("/categories", { method: "POST", body: JSON.stringify(data) }),
+  login: (data) =>
+    request("/auth/login", { method: "POST", body: JSON.stringify(data) }),
 
-  /**
-   * Atualiza uma categoria existente.
-   * @param {string} id - id da categoria a atualizar.
-   * @param {object} data - Campos a serem alterados (parcial).
-   * @returns {Promise<object>} Categoria atualizada.
-   */
-  updateCategory: (id, data) =>
-    request(`/categories/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+  // ── Categorias ──────────────────────────────────────────────────────────────
+  listCategories:  ()       => request("/categories"),
+  createCategory:  (data)   => request("/categories",       { method: "POST",   body: JSON.stringify(data) }),
+  updateCategory:  (id, d)  => request(`/categories/${id}`, { method: "PUT",    body: JSON.stringify(d) }),
+  deleteCategory:  (id)     => request(`/categories/${id}`, { method: "DELETE" }),
 
+  // ── Transações ──────────────────────────────────────────────────────────────
   /**
-   * Exclui uma categoria (rejeita se for padrão).
-   * @param {string} id - id da categoria.
-   * @returns {Promise<null>} Resolve com null em caso de sucesso.
+   * Lista transações, com filtro opcional de mês/ano.
+   * @param {{ month?: number, year?: number }} [filter]
    */
-  deleteCategory: (id) =>
-    request(`/categories/${id}`, { method: "DELETE" }),
-
-  /**
-   * Lista todas as transações já com a categoria expandida.
-   * @returns {Promise<Array>} Lista de transações ordenadas por data desc.
-   */
-  listTransactions: () => request("/transactions"),
-
-  /**
-   * Cria uma nova transação.
-   * @param {{description: string, value: number, date: string|Date, categoryId: string}} data
-   * @returns {Promise<object>} Transação criada com a categoria embutida.
-   */
-  createTransaction: (data) =>
-    request("/transactions", { method: "POST", body: JSON.stringify(data) }),
-
-  /**
-   * Atualiza uma transação existente.
-   * @param {string} id - id da transação.
-   * @param {object} data - Campos a serem alterados (parcial).
-   * @returns {Promise<object>} Transação atualizada.
-   */
-  updateTransaction: (id, data) =>
-    request(`/transactions/${id}`, { method: "PUT", body: JSON.stringify(data) }),
-
-  /**
-   * Exclui uma transação.
-   * @param {string} id - id da transação.
-   * @returns {Promise<null>} Resolve com null em caso de sucesso.
-   */
-  deleteTransaction: (id) =>
-    request(`/transactions/${id}`, { method: "DELETE" }),
+  listTransactions: (filter) => {
+    const qs = filter?.month && filter?.year
+      ? `?month=${filter.month}&year=${filter.year}`
+      : "";
+    return request(`/transactions${qs}`);
+  },
+  createTransaction: (data)  => request("/transactions",        { method: "POST",   body: JSON.stringify(data) }),
+  updateTransaction: (id, d) => request(`/transactions/${id}`,  { method: "PUT",    body: JSON.stringify(d) }),
+  deleteTransaction: (id)    => request(`/transactions/${id}`,  { method: "DELETE" }),
 };

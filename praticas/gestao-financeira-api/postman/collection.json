@@ -1,0 +1,216 @@
+{
+  "info": {
+    "name": "Gestão Financeira API",
+    "_postman_id": "gestao-financeira-api-collection",
+    "description": "Collection completa para testar a API gestao-financeira-api.\n\nVariável de ambiente necessária:\n  baseUrl = http://localhost:3000\n\nFluxo recomendado:\n  1. POST /auth/login  →  copie o token retornado\n  2. Cole o token na variável de ambiente `token`\n  3. Todos os endpoints de /transactions usam Authorization: Bearer {{token}}\n  4. Endpoints de /categories são públicos (não exigem token nesta versão)\n\nUsuário demo (inserido pelo seed):\n  email: demo@gestao.com\n  senha: demo123",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000", "type": "string" },
+    { "key": "token",   "value": "",                      "type": "string" },
+    { "key": "categoryId",   "value": "", "type": "string" },
+    { "key": "transactionId","value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Health-check",
+      "request": {
+        "method": "GET",
+        "url":    "{{baseUrl}}/",
+        "description": "Verifica se o servidor está no ar.\nResposta esperada: { \"ok\": true, \"name\": \"gestao-financeira-api\" }"
+      }
+    },
+    {
+      "name": "Auth Register",
+      "request": {
+        "method": "POST",
+        "url":    "{{baseUrl}}/auth/register",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Meu Nome\",\n  \"email\": \"meu@email.com\",\n  \"password\": \"minhasenha\"\n}"
+        },
+        "description": "Cria um novo usuário. Retorna 201 com os dados (sem a senha)."
+      }
+    },
+    {
+      "name": "Auth Login",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const json = pm.response.json();",
+              "if (json.token) {",
+              "  pm.collectionVariables.set('token', json.token);",
+              "  console.log('Token salvo:', json.token.slice(0,20) + '...');",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "url":    "{{baseUrl}}/auth/login",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"demo@gestao.com\",\n  \"password\": \"demo123\"\n}"
+        },
+        "description": "Autentica o usuário. O script de teste salva automaticamente o JWT na variável `token`.\nResposta: { token, user: { id, name, email } }"
+      }
+    },
+    {
+      "name": "Categorias - Listar",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const cats = pm.response.json();",
+              "const income = cats.find(c => c.name === 'income');",
+              "if (income) pm.collectionVariables.set('categoryId', income.id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "url":    "{{baseUrl}}/categories",
+        "description": "Lista todas as categorias ordenadas por displayName.\nO script de teste salva automaticamente o id da categoria 'income' em `categoryId`."
+      }
+    },
+    {
+      "name": "Categorias - Criar",
+      "request": {
+        "method": "POST",
+        "url":    "{{baseUrl}}/categories",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"health\",\n  \"displayName\": \"Saúde\",\n  \"icon\": \"favorite\",\n  \"background\": \"#FFB6B6\",\n  \"isIncome\": false\n}"
+        },
+        "description": "Cria uma nova categoria.\nResposta esperada: 201 Created com o objeto criado (incluindo o id gerado)."
+      }
+    },
+    {
+      "name": "Categorias - Atualizar",
+      "request": {
+        "method": "PUT",
+        "url":    "{{baseUrl}}/categories/id",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"displayName\": \"Saúde e Bem-estar\"\n}"
+        },
+        "description": "Atualiza parcialmente uma categoria existente."
+      }
+    },
+    {
+      "name": "Categorias - Excluir",
+      "request": {
+        "method": "DELETE",
+        "url":    "{{baseUrl}}/categories/id",
+        "description": "Tenta excluir a categoria padrão 'income'.\nResposta esperada: 400 com { \"error\": \"Categorias padrão não podem ser excluídas\" }"
+      }
+    },
+    { 
+      "name": "Transações - Criar",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const tx = pm.response.json();",
+              "if (tx.id) pm.collectionVariables.set('transactionId', tx.id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "url":    "{{baseUrl}}/transactions",
+        "header": [
+          { "key": "Content-Type",  "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"description\": \"Salário de outubro\",\n  \"value\": 3500.50,\n  \"date\": \"2026-04-29\",\n  \"categoryId\": \"{{categoryId}}\"\n}"
+        },
+        "description": "Cria uma nova transação para o usuário autenticado.\nRequer: Authorization: Bearer {{token}}\nResposta esperada: 201 Created com a categoria aninhada.\nO script de teste salva o id em `transactionId`."
+      }
+    },
+    {
+      "name": "Transações - Listar",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/transactions?month=4&year=2026",
+          "host": ["{{baseUrl}}"],
+          "path": ["transactions"],
+          "query": [
+            { "key": "month", "value": "4",    "description": "Mês (1–12). Omitir para listar todos." },
+            { "key": "year",  "value": "2026", "description": "Ano. Omitir para listar todos." }
+          ]
+        },
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "description": "Lista transações do usuário autenticado.\nParâmetros opcionais: ?month=4&year=2026 para filtrar por mês/ano.\nResposta: array com a categoria expandida em cada item."
+      }
+    },
+    {
+      "name": "Transações - Atualizar",
+      "request": {
+        "method": "PUT",
+        "url":    "{{baseUrl}}/transactions/id",
+        "header": [
+          { "key": "Content-Type",  "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"description\": \"Salário de outubro (corrigido)\",\n  \"value\": 3800.00\n}"
+        },
+        "description": "Atualiza parcialmente uma transação do usuário autenticado.\nResposta: transação atualizada com categoria aninhada."
+      }
+    },
+    {
+      "name": "Transações - Excluir",
+      "request": {
+        "method": "DELETE",
+        "url":    "{{baseUrl}}/transactions/id",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "description": "Exclui uma transação.\nResposta esperada: 204 No Content."
+      }
+    },
+    {
+      "name": "Validação de erros",
+      "request": {
+        "method": "POST",
+        "url":    "{{baseUrl}}/transactions",
+        "header": [
+          { "key": "Content-Type",  "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{ \"description\": \"\" }"
+        },
+        "description": "Envia corpo inválido para testar a validação Zod.\nResposta esperada: 400 com { \"error\": \"Dados inválidos\", \"details\": [...] }"
+      }
+    },
+    {
+      "name": "Credenciais inválidas",
+      "request": {
+        "method": "POST",
+        "url":    "{{baseUrl}}/auth/login",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"demo@gestao.com\",\n  \"password\": \"senhaerrada\"\n}"
+        },
+        "description": "Testa login com senha incorreta.\nResposta esperada: 401 com { \"error\": \"Credenciais inválidas\" }"
+      }
+    }
+  ]
+}

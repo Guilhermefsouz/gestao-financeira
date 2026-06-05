@@ -1,12 +1,6 @@
 /**
  * Middleware central de erro do Express.
  * Captura tudo que cair em next(error) e devolve JSON consistente.
- *
- * @param {Error} err - Erro capturado por algum handler.
- * @param {import("express").Request} req - Requisição HTTP.
- * @param {import("express").Response} res - Resposta HTTP.
- * @param {import("express").NextFunction} next - Próximo middleware (não usado, mas exigido pela assinatura).
- * @returns {void}
  */
 export function errorHandler(err, req, res, next) {
   console.error(err);

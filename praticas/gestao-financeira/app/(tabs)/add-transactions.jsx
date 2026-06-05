@@ -21,13 +21,6 @@ import { colors } from "../../constants/colors";
 
 /**
  * Tela "Adicionar Transação".
- *
- * O formulário escolhe a categoria padrão de forma dinâmica (a primeira
- * `isIncome` ou, na ausência, a primeira da lista). Em caso de falha de
- * rede, exibe Alert e mantém o formulário preenchido para o usuário tentar
- * novamente.
- *
- * @returns {JSX.Element}
  */
 export default function AddTransactions() {
   const { categories, loading, addTransaction } = useContext(MoneyContext);
@@ -49,7 +42,6 @@ export default function AddTransactions() {
   const [form, setForm] = useState(buildInitialForm);
   const [submitting, setSubmitting] = useState(false);
 
-  // mantém o categoryId default coerente com a lista carregada
   if (!form.categoryId && defaultCategoryId) {
     setForm((prev) => ({ ...prev, categoryId: defaultCategoryId }));
   }
@@ -97,9 +89,7 @@ export default function AddTransactions() {
   if (categories.length === 0) {
     return (
       <View style={[globalStyles.screenContainer, styles.center]}>
-        <Text style={globalStyles.primaryText}>
-          Nenhuma categoria cadastrada.
-        </Text>
+        <Text style={globalStyles.primaryText}>Nenhuma categoria cadastrada.</Text>
         <Text style={globalStyles.secondaryText}>
           Vá até a aba &quot;Categorias&quot; para criar a primeira.
         </Text>
@@ -112,22 +102,10 @@ export default function AddTransactions() {
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <ScrollView style={globalStyles.content}>
           <View style={styles.form}>
-            <DescriptionInput
-              form={form}
-              setForm={setForm}
-              valueInputRef={valueInputRef}
-            />
-            <CurrencyInput
-              form={form}
-              setForm={setForm}
-              valueInputRef={valueInputRef}
-            />
+            <DescriptionInput form={form} setForm={setForm} valueInputRef={valueInputRef} />
+            <CurrencyInput form={form} setForm={setForm} valueInputRef={valueInputRef} />
             <DatePicker form={form} setForm={setForm} />
-            <CategoryPicker
-              form={form}
-              setForm={setForm}
-              categories={categories}
-            />
+            <CategoryPicker form={form} setForm={setForm} categories={categories} />
           </View>
           <Button onPress={handleAdd} disabled={submitting}>
             {submitting ? "Salvando..." : "Adicionar"}
@@ -139,15 +117,6 @@ export default function AddTransactions() {
 }
 
 const styles = StyleSheet.create({
-  form: {
-    gap: 12,
-    marginBottom: 40,
-    marginTop: 10,
-  },
-  center: {
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    padding: 24,
-  },
+  form: { gap: 12, marginBottom: 40, marginTop: 10 },
+  center: { alignItems: "center", justifyContent: "center", gap: 8, padding: 24 },
 });

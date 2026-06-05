@@ -7,7 +7,7 @@ import {
 
 const router = Router();
 
-// GET /categories - lista todas as categorias
+// GET /categories — lista todas as categorias
 router.get("/", async (req, res, next) => {
   try {
     const categories = await prisma.category.findMany({
@@ -17,7 +17,7 @@ router.get("/", async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-// POST /categories - cria uma nova categoria
+// POST /categories — cria uma nova categoria
 router.post("/", async (req, res, next) => {
   try {
     const data = createCategorySchema.parse(req.body);
@@ -26,7 +26,7 @@ router.post("/", async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-// PUT /categories/:id - atualiza categoria existente
+// PUT /categories/:id — atualiza categoria existente
 router.put("/:id", async (req, res, next) => {
   try {
     const data = updateCategorySchema.parse(req.body);
@@ -38,7 +38,7 @@ router.put("/:id", async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-// DELETE /categories/:id - remove categoria (bloqueia se for padrão)
+// DELETE /categories/:id — remove categoria (bloqueia se for padrão)
 router.delete("/:id", async (req, res, next) => {
   try {
     const existing = await prisma.category.findUnique({

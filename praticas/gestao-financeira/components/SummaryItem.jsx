@@ -2,12 +2,6 @@ import { StyleSheet, Text, View } from "react-native";
 import CategoryItem from "./CategoryItem";
 import { globalStyles } from "../styles/globalStyles";
 
-/**
- * Linha do resumo: bolinha da categoria + nome + total formatado em BRL.
- *
- * @param {{ category: object, value: number }} props
- * @returns {JSX.Element}
- */
 export default function SummaryItem({ category, value }) {
   const valueStyle = category?.isIncome
     ? globalStyles.positiveText
